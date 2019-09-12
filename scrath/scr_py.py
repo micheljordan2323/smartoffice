@@ -12,6 +12,33 @@ sys.path.append("../")
 sys.path.append("../grove/")
 import common.sql_lib as sql_lib
 
+#additional install
+import pigpio
+#import numpy as np
+import configparser
+#import pandas as pd
+
+
+
+import common.sql_lib as sql_lib
+import common.thingspeak as thingspeak
+#import common.fswebcamtest as fswebcamtest
+
+import scratch
+import numpy
+
+
+################
+#
+# センサ用のライブラリをインポートしておく
+#
+
+#omron 評価ボード用
+#import sensor.grove_d6t as d6t_lib
+import sensor.sht30_lib as sht30
+import sensor.omron_2smpd_lib as omron_2smpd_lib
+
+
 
 from grove import grove_sound_sensor as snd #ok
 from grove import grove_piezo_vibration_sensor as pie #ok
@@ -26,7 +53,8 @@ import grove_time_of_flight_distancemiya as tof #ok
 #from rpi_vl53l0x.vl53l0x import VL53L0X
 #tof._adapter = Bus()
 #GroveTofDistanceVL53L0X = tof.VL53L0X(bus = _adapter.bus)
-tof.init()
+
+#tof.init()
 
 
 #from grove.helper import SlotHelper
@@ -34,27 +62,14 @@ tof.init()
 #pin = sh.argv2pin()
 
 
-n=pie.GrovePiezoVibrationSensor(5)
-
-
-#additional install
-import pigpio
-#import numpy as np
-import configparser
-#import pandas as pd
+#n=pie.GrovePiezoVibrationSensor(5)
 
 
 
-import common.sql_lib as sql_lib
-import common.thingspeak as thingspeak
-#import common.fswebcamtest as fswebcamtest
-
-#import sensor.grove_d6t as d6t_lib
-#import sensor.sht30_lib as sht30
-#import sensor.omron_2smpd_lib as omron_2smpd_lib
-
-import scratch
-import numpy
+################
+#
+# 設定ファイルの読み込み
+#
 
 
 
@@ -128,9 +143,9 @@ thg.set_field(fieldlist)
 print("Sensor initilize")
 
 #OMRON のセンサ
-#sht=sht30.SHT30()
+sht=sht30.SHT30()
 #d6t = d6t_lib.GroveD6t("44L")
-#psensor = omron_2smpd_lib.Grove2smpd02e()
+psensor = omron_2smpd_lib.Grove2smpd02e()
 
 #Groveのセンサ
 
@@ -243,25 +258,33 @@ while(True):
 
     if buf["broadcast"]==["get"]:
         print("get")
-        dis=tof.getdistance()
+#        dis=tof.getdistance()
+#        light=sensor.light
+        temp,humid=sht.read()
+        press, temp2 = psensor.readData()
 
-        light=sensor.light
 
-        pi.buf0=dis
-        pi.buf1=dis
+
+        pi.buf0=temp
+        pi.buf1=humid
+        pi.buf2=press
 
         pi.cnt=pi.cnt+1
-
         tm=dt.datetime.now()
-        dat=[pi.cnt,tm,dis,light,0]
+
+        #localDB用の出力
+        #dat=[pi.cnt,tm,dis,light,0]
+        dat=[pi.cnt,tm,temp,humid,press]
+
         db.append2(dat)
-        s.sensorupdate({"tof":dis})
-        s.sensorupdate({"lit":light})
+        s.sensorupdate({"temp":temp})
+        s.sensorupdate({"humid":humid})
+        s.sensorupdate({"press":press})
         s.sensorupdate({"cnt":pi.cnt})
 
     if buf["broadcast"]==["upload"]:
         print("-----------upload-------------------")
-        datlist=[pi.buf0,pi.buf1]
+        datlist=[pi.buf0,pi.buf1,pi.buf2]
         thg.sendall(datlist)
 
 
