@@ -23,6 +23,6 @@ sudo apt-get install python3-pandas
 sudo apt-get install python-pandas
 
 #python libインストール
-pip install configparser
-pip install transitions
-
+python3 -m pip install configparser
+python3 -m pip install transitions
+python3 -m pip install scratch
